@@ -1,13 +1,26 @@
 {
   "manifest_version": 3,
   "name": "Search Tracker",
-  "version": "1.0.0",
-  "description": "Track your own Google searches across devices",
+  "version": "1.1.0",
+  "description": "Track your searches across Google, YouTube, and Amazon",
+  
   "permissions": ["tabs", "storage"],
-  "host_permissions": ["*://*.google.com/*"],
+
+  "host_permissions": [
+    "*://*.google.com/*",
+    "*://*.youtube.com/*",
+
+    "*://*.amazon.com/*",
+    "*://*.amazon.in/*",
+    "*://*.amazon.co.uk/*",
+
+    "https://search-tracker-nxb4.onrender.com/*"
+  ],
+
   "background": {
     "service_worker": "background.js"
   },
+
   "action": {
     "default_popup": "popup.html",
     "default_title": "Search Tracker"

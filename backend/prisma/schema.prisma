@@ -12,8 +12,10 @@ model Search {
   query     String
   timestamp DateTime
   device    String
+  source    String   @default("Unknown")
   createdAt DateTime @default(now())
 
   @@index([timestamp])
   @@index([query])
+  @@index([source])
 }

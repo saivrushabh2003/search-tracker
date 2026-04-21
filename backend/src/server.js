@@ -54,11 +54,12 @@ app.post("/api/search", authMiddleware, async (req, res) => {
 
   try {
     const search = await prisma.search.create({
-      data: {
-        query: query.trim(),
-        timestamp: new Date(timestamp),
-        device: device.trim(),
-      },
+   data: {
+  query: query.trim(),
+  timestamp: new Date(timestamp),
+  device: device.trim(),
+  source: req.body.source || "Unknown",
+},
     });
     res.status(201).json(search);
   } catch (err) {
