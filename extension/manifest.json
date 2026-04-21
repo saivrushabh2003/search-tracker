@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "Search Tracker",
+  "version": "1.0.0",
+  "description": "Track your own Google searches across devices",
+  "permissions": ["tabs", "storage"],
+  "host_permissions": ["*://*.google.com/*"],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Search Tracker"
+  }
+}

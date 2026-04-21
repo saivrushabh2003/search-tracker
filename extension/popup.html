@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Search Tracker</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        width: 260px;
+        padding: 16px;
+        background: #fff;
+        color: #111;
+      }
+      h1 { font-size: 15px; font-weight: 600; margin-bottom: 14px; color: #1a1a1a; }
+      .row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 10px 0;
+        border-top: 1px solid #eee;
+      }
+      .label { font-size: 13px; color: #444; }
+      .toggle {
+        position: relative;
+        width: 40px;
+        height: 22px;
+        cursor: pointer;
+      }
+      .toggle input { opacity: 0; width: 0; height: 0; }
+      .slider {
+        position: absolute;
+        top: 0; left: 0; right: 0; bottom: 0;
+        background: #ccc;
+        border-radius: 22px;
+        transition: 0.3s;
+      }
+      .slider::before {
+        content: "";
+        position: absolute;
+        height: 16px; width: 16px;
+        left: 3px; bottom: 3px;
+        background: white;
+        border-radius: 50%;
+        transition: 0.3s;
+      }
+      input:checked + .slider { background: #4f46e5; }
+      input:checked + .slider::before { transform: translateX(18px); }
+      .status {
+        font-size: 11px;
+        margin-top: 10px;
+        padding: 6px 10px;
+        border-radius: 6px;
+        text-align: center;
+      }
+      .status.on  { background: #ecfdf5; color: #065f46; }
+      .status.off { background: #fef2f2; color: #991b1b; }
+    </style>
+  </head>
+  <body>
+    <h1>🔍 Search Tracker</h1>
+    <div class="row">
+      <span class="label">Track searches</span>
+      <label class="toggle">
+        <input type="checkbox" id="toggle" />
+        <span class="slider"></span>
+      </label>
+    </div>
+    <div id="status" class="status on">Tracking is ON</div>
+    <script src="popup.js"></script>
+  </body>
+</html>

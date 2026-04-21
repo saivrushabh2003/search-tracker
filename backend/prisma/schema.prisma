@@ -1,0 +1,19 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Search {
+  id        String   @id @default(uuid())
+  query     String
+  timestamp DateTime
+  device    String
+  createdAt DateTime @default(now())
+
+  @@index([timestamp])
+  @@index([query])
+}
