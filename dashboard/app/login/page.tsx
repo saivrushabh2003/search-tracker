@@ -39,11 +39,10 @@ export default function DashboardPage() {
       });
 
       const data: Search[] = await res.json();
-
       setSearches(data);
       setLoading(false);
     } catch {
-      console.log("Error fetching");
+      console.log("Error fetching searches");
     }
   }, []);
 
@@ -53,6 +52,7 @@ export default function DashboardPage() {
       router.replace("/login");
       return;
     }
+
     tokenRef.current = token;
     fetchSearches();
   }, [fetchSearches, router]);
@@ -62,10 +62,10 @@ export default function DashboardPage() {
     (s) => !sourceFilter || s.source === sourceFilter
   );
 
-  // ✅ TOP SEARCHES (FIXED)
+  // ✅ TOP SEARCHES
   const topSearches = Object.entries(
     filteredSearches.reduce((acc, s) => {
-      const key = s.query.toLowerCase(); // normalize
+      const key = s.query.toLowerCase();
       acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
