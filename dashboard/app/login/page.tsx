@@ -33,13 +33,18 @@ export default function DashboardPage() {
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 
-    const res = await fetch(`${apiUrl}/api/searches`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
+    try {
+      const res = await fetch(`${apiUrl}/api/searches`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-    const data: Search[] = await res.json();
-    setSearches(data);
-    setLoading(false);
+      const data: Search[] = await res.json();
+
+      setSearches(data);
+      setLoading(false);
+    } catch {
+      console.log("Error fetching");
+    }
   }, []);
 
   useEffect(() => {
@@ -57,10 +62,11 @@ export default function DashboardPage() {
     (s) => !sourceFilter || s.source === sourceFilter
   );
 
-  // ✅ TOP SEARCHES LOGIC
+  // ✅ TOP SEARCHES (FIXED)
   const topSearches = Object.entries(
     filteredSearches.reduce((acc, s) => {
-      acc[s.query] = (acc[s.query] || 0) + 1;
+      const key = s.query.toLowerCase(); // normalize
+      acc[key] = (acc[key] || 0) + 1;
       return acc;
     }, {} as Record<string, number>)
   )
@@ -112,13 +118,8 @@ export default function DashboardPage() {
           ) : (
             <ul className="space-y-2">
               {topSearches.map(([query, count], i) => (
-                <li
-                  key={query}
-                  className="flex justify-between text-sm text-gray-700"
-                >
-                  <span>
-                    {i + 1}. {query}
-                  </span>
+                <li key={query} className="flex justify-between text-sm">
+                  <span>{i + 1}. {query}</span>
                   <span className="font-semibold">{count}</span>
                 </li>
               ))}
