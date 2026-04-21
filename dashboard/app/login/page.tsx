@@ -38,13 +38,21 @@ export default function DashboardPage() {
         headers: { Authorization: `Bearer ${token}` },
       });
 
+      if (res.status === 401 || res.status === 403) {
+        localStorage.removeItem("api_token");
+        router.replace("/login");
+        return;
+      }
+
       const data: Search[] = await res.json();
+
       setSearches(data);
       setLoading(false);
-    } catch {
-      console.log("Error fetching searches");
+    } catch (err) {
+      console.error("Fetch error:", err);
+      setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     const token = localStorage.getItem("api_token");
