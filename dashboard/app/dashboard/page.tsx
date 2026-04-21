@@ -7,7 +7,7 @@ interface Search {
   query: string;
   timestamp: string;
   device: string;
-  source: string;   // ✅ added
+  source: string;
   createdAt: string;
 }
 
@@ -20,12 +20,17 @@ function formatDate(iso: string) {
 
 export default function DashboardPage() {
   const router = useRouter();
+
   const [searches, setSearches] = useState<Search[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [keyword, setKeyword] = useState("");
   const [fromDate, setFromDate] = useState("");
   const [toDate, setToDate] = useState("");
+
+  const [sourceFilter, setSourceFilter] = useState(""); // ✅ NEW
+
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
   const tokenRef = useRef<string>("");
 
@@ -34,6 +39,7 @@ export default function DashboardPage() {
     if (!token) return;
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
     const params = new URLSearchParams();
     if (keyword) params.set("q", keyword);
     if (fromDate) params.set("from", new Date(fromDate).toISOString());
@@ -47,13 +53,17 @@ export default function DashboardPage() {
       const res = await fetch(`${apiUrl}/api/searches?${params.toString()}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (res.status === 401 || res.status === 403) {
         localStorage.removeItem("api_token");
         router.replace("/login");
         return;
       }
+
       if (!res.ok) throw new Error("Server error");
+
       const data: Search[] = await res.json();
+
       setSearches(data);
       setLastUpdated(new Date());
       setError("");
@@ -70,6 +80,7 @@ export default function DashboardPage() {
       router.replace("/login");
       return;
     }
+
     tokenRef.current = token;
     fetchSearches();
   }, [fetchSearches, router]);
@@ -84,103 +95,100 @@ export default function DashboardPage() {
     router.replace("/login");
   }
 
-  function handleFilter(e: React.FormEvent) {
-    e.preventDefault();
-    setLoading(true);
-    fetchSearches();
-  }
-
-  function handleClear() {
-    setKeyword("");
-    setFromDate("");
-    setToDate("");
-  }
-
   function deviceLabel(d: string) {
     return d.length > 12 ? d.slice(0, 12) + "…" : d;
   }
 
+  // ✅ FILTER LOGIC
+  const filteredSearches = searches.filter(
+    (s) => !sourceFilter || s.source === sourceFilter
+  );
+
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <span className="text-2xl">🔍</span>
-          <div>
-            <h1 className="text-lg font-bold text-gray-900">Search Tracker</h1>
-            {lastUpdated && (
-              <p className="text-xs text-gray-400">
-                Last updated: {formatDate(lastUpdated.toISOString())}
-              </p>
-            )}
-          </div>
-        </div>
-        <button
-          onClick={handleLogout}
-          className="text-sm text-gray-500 hover:text-red-600 transition-colors"
-        >
-          Sign out
+
+      {/* Header */}
+      <header className="bg-white border-b px-6 py-4 flex justify-between">
+        <h1 className="font-bold text-lg">Search Tracker</h1>
+        <button onClick={handleLogout} className="text-red-500 text-sm">
+          Logout
         </button>
       </header>
 
-      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-4">
 
-        {/* Table */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-gray-700">
-              Recent Searches ({searches.length})
+        {/* ✅ SOURCE FILTER */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm">Filter:</label>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">All</option>
+            <option value="Google">Google</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Amazon">Amazon</option>
+          </select>
+        </div>
+
+        {/* TABLE */}
+        <div className="bg-white rounded-xl border overflow-hidden">
+
+          <div className="px-5 py-3 border-b">
+            <h2 className="text-sm font-semibold">
+              Recent Searches ({filteredSearches.length})
             </h2>
-            <span className="text-xs text-indigo-500 animate-pulse">● Live</span>
           </div>
 
           {loading ? (
-            <div className="px-5 py-12 text-center text-gray-400 text-sm">
-              Loading searches…
-            </div>
+            <div className="p-5 text-gray-400">Loading...</div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="bg-gray-50 text-left text-xs text-gray-500 uppercase tracking-wide">
-                    <th className="px-5 py-3 font-semibold">Query</th>
-                    <th className="px-5 py-3 font-semibold">Source</th>
-                    <th className="px-5 py-3 font-semibold">Date & Time</th>
-                    <th className="px-5 py-3 font-semibold">Device</th>
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-xs uppercase text-gray-500">
+                  <th className="px-5 py-3 text-left">Query</th>
+                  <th className="px-5 py-3 text-left">Source</th>
+                  <th className="px-5 py-3 text-left">Date</th>
+                  <th className="px-5 py-3 text-left">Device</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredSearches.map((s) => (
+                  <tr key={s.id} className="border-t">
+
+                    <td className="px-5 py-3">{s.query}</td>
+
+                    <td className="px-5 py-3">
+                      <span
+                        className="px-2 py-1 rounded text-xs"
+                        style={{
+                          background:
+                            s.source === "Google" ? "#e3f2fd" :
+                            s.source === "YouTube" ? "#ffebee" :
+                            s.source === "Amazon" ? "#fff3e0" :
+                            "#eee"
+                        }}
+                      >
+                        {s.source}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-3">
+                      {formatDate(s.timestamp)}
+                    </td>
+
+                    <td className="px-5 py-3">
+                      {deviceLabel(s.device)}
+                    </td>
+
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100">
-                  {searches.map((s) => (
-                    <tr key={s.id}>
-                      <td className="px-5 py-3 font-medium">{s.query}</td>
-
-                      <td className="px-5 py-3">
-                        <span
-                          className="px-2 py-1 rounded text-xs font-semibold"
-                          style={{
-                            background:
-                              s.source === "Google" ? "#e3f2fd" :
-                              s.source === "YouTube" ? "#ffebee" :
-                              s.source === "Amazon" ? "#fff3e0" :
-                              "#eee"
-                          }}
-                        >
-                          {s.source}
-                        </span>
-                      </td>
-
-                      <td className="px-5 py-3">
-                        {formatDate(s.timestamp)}
-                      </td>
-
-                      <td className="px-5 py-3">
-                        {deviceLabel(s.device)}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
+
         </div>
 
       </main>

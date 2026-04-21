@@ -40,7 +40,7 @@ app.get("/health", (req, res) => {
 
 // POST /api/search — record a new search
 app.post("/api/search", authMiddleware, async (req, res) => {
-  const { query, timestamp, device } = req.body;
+  const { query, timestamp, device, source } = req.body;
 
   if (!query || typeof query !== "string" || query.trim() === "") {
     return res.status(400).json({ error: "query is required and must be a non-empty string" });
@@ -54,11 +54,11 @@ app.post("/api/search", authMiddleware, async (req, res) => {
 
   try {
     const search = await prisma.search.create({
-   data: {
+data: {
   query: query.trim(),
   timestamp: new Date(timestamp),
   device: device.trim(),
-  source: req.body.source || "Unknown",
+  source: source || "Unknown",   // 
 },
     });
     res.status(201).json(search);

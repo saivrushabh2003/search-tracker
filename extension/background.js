@@ -1,9 +1,9 @@
 console.log("🔥 Background script loaded");
 
 const API_URL = "https://search-tracker-nxb4.onrender.com/api/search";
-const API_TOKEN = "517fc9134f21cbd2a0561ff9f727b0e0a581ea540fac51c0473b67bc6680b1c1"; //
+const API_TOKEN = "517fc9134f21cbd2a0561ff9f727b0e0a581ea540fac51c0473b67bc6680b1c1";
 
-let lastUrl = ""; // prevent duplicates
+let lastUrl = "";
 
 // ── Device ID ─────────────────────────────
 function getDeviceId() {
@@ -35,7 +35,7 @@ async function sendSearch(query, deviceId, source, tab) {
     query,
     timestamp: new Date().toISOString(),
     device: deviceId,
-    source,
+    source: source || "Unknown",   // ✅ safety fallback
     url: tab.url,
     title: tab.title,
   };
@@ -55,7 +55,6 @@ async function sendSearch(query, deviceId, source, tab) {
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
   };
 
-  // retry logic
   for (let i = 0; i < 2; i++) {
     try {
       await tryPost();
@@ -85,11 +84,10 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     return;
   }
 
-  // trigger only when useful
   if (changeInfo.status !== "complete" && !changeInfo.url) return;
 
   let query = null;
-  let source = "";
+  let source = null;
 
   // ── Google ──
   if (
@@ -111,16 +109,22 @@ chrome.tabs.onUpdated.addListener(async (tabId, changeInfo, tab) => {
     source = "YouTube";
   }
 
-  // ── Amazon ──
+  // ── Amazon (improved detection) ──
   else if (
-    url.hostname.includes("amazon.") &&
-    url.searchParams.has("k")
+    url.hostname.includes("amazon") &&
+    (url.searchParams.has("k") || url.searchParams.has("field-keywords"))
   ) {
-    query = url.searchParams.get("k");
+    query =
+      url.searchParams.get("k") ||
+      url.searchParams.get("field-keywords");
     source = "Amazon";
   }
 
-  if (!query || query.trim() === "") return;
+  // ❌ nothing matched
+  if (!query || !source) {
+    console.log("⛔ Not a tracked search");
+    return;
+  }
 
   console.log(`🎯 ${source} search detected:`, query);
 
