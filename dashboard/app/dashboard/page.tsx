@@ -1,5 +1,7 @@
 "use client";
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? "https://search-tracker-nxb4.onrender.com";
+
 import { useEffect, useState, useMemo } from "react";
 
 interface Search {
@@ -46,7 +48,7 @@ export default function DashboardPage() {
       const token = localStorage.getItem("api_token");
       if (!token) { window.location.href = "/login"; return; }
       try {
-        const res = await fetch("https://search-tracker-nxb4.onrender.com/api/searches", {
+        const res = await fetch(`${API_BASE}/api/searches`, {
           headers: { Authorization: `Bearer ${token}` },
         });
         if (!res.ok) throw new Error("Unauthorized");
@@ -78,7 +80,7 @@ export default function DashboardPage() {
     ).sort((a, b) => b[1] - a[1]).slice(0, 5);
   }, [searches]);
 
-  const stats = useMemo(() => {
+  const stats: Record<string, number> = useMemo(() => {
     const bySource = searches.reduce((acc, s) => {
       acc[s.source] = (acc[s.source] || 0) + 1;
       return acc;
