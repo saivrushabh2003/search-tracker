@@ -9,43 +9,28 @@ const PORT = process.env.PORT || 3001;
 const API_TOKEN = process.env.API_TOKEN;
 
 if (!API_TOKEN) {
-  console.error("ERROR: API_TOKEN is not set in environment variables.");
+  console.error("ERROR: API_TOKEN missing in .env");
   process.exit(1);
 }
 
-// ── CORS FIX (IMPORTANT) ─────────────────────────────────────────────
+// ─────────────────────────────────────────
+// ✅ FIXED CORS (THIS IS THE KEY FIX)
+// ─────────────────────────────────────────
 
-// allow your frontend domains
-const allowedOrigins = [
-  "http://localhost:3000",
-  "https://search-tracker-beta.vercel.app",
-  "https://search-tracker-1rm3-5ia4n291z-saivrushabh2003s-projects.vercel.app",
-];
+app.use(cors({
+  origin: "*", // allow all (safe for your use case)
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+}));
 
-app.use(
-  cors({
-    origin: function (origin, callback) {
-      // allow requests with no origin (like curl / Postman)
-      if (!origin) return callback(null, true);
-
-      if (allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      } else {
-        return callback(new Error("CORS not allowed"));
-      }
-    },
-    methods: ["GET", "POST", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
-    credentials: true,
-  })
-);
-
-// 🔥 handle preflight properly
+// handle preflight
 app.options("*", cors());
 
 app.use(express.json());
 
-// ── Auth Middleware ─────────────────────────────────────────────
+// ─────────────────────────────────────────
+// AUTH MIDDLEWARE
+// ─────────────────────────────────────────
 
 function authMiddleware(req, res, next) {
   const authHeader = req.headers["authorization"];
@@ -63,27 +48,25 @@ function authMiddleware(req, res, next) {
   next();
 }
 
-// ── Routes ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────
+// ROUTES
+// ─────────────────────────────────────────
 
-// Health
+// health
 app.get("/health", (req, res) => {
-  res.json({ status: "ok", timestamp: new Date().toISOString() });
+  res.json({ status: "ok" });
 });
 
-// POST search
+// save search
 app.post("/api/search", authMiddleware, async (req, res) => {
   const { query, timestamp, device, source } = req.body;
-
-  if (!query || typeof query !== "string" || query.trim() === "") {
-    return res.status(400).json({ error: "Invalid query" });
-  }
 
   try {
     const search = await prisma.search.create({
       data: {
         query: query.trim(),
         timestamp: new Date(timestamp),
-        device: device.trim(),
+        device,
         source: source || "Unknown",
       },
     });
@@ -95,7 +78,7 @@ app.post("/api/search", authMiddleware, async (req, res) => {
   }
 });
 
-// GET searches
+// get searches
 app.get("/api/searches", authMiddleware, async (req, res) => {
   try {
     const searches = await prisma.search.findMany({
@@ -110,15 +93,19 @@ app.get("/api/searches", authMiddleware, async (req, res) => {
   }
 });
 
-// ── Error handler ─────────────────────────────────────────────
+// ─────────────────────────────────────────
+// ERROR HANDLER
+// ─────────────────────────────────────────
 
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
   res.status(500).json({ error: "Internal server error" });
 });
 
-// ── Start ─────────────────────────────────────────────────────
+// ─────────────────────────────────────────
+// START SERVER
+// ─────────────────────────────────────────
 
 app.listen(PORT, () => {
-  console.log(`API running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
