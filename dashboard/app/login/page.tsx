@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 interface Search {
@@ -27,24 +27,35 @@ export default function DashboardPage() {
 
   const tokenRef = useRef<string>("");
 
-  const fetchSearches = useCallback(async () => {
+  // 🔥 FIXED fetch (no useCallback)
+  async function fetchSearches() {
     const token = tokenRef.current;
-    if (!token) return;
+    if (!token) {
+      console.log("No token found");
+      return;
+    }
 
     const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+    console.log("API URL:", apiUrl);
 
     try {
       const res = await fetch(`${apiUrl}/api/searches`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
       });
 
+      console.log("Response status:", res.status);
+
       if (res.status === 401 || res.status === 403) {
+        console.log("Invalid token → redirecting");
         localStorage.removeItem("api_token");
         router.replace("/login");
         return;
       }
 
       const data: Search[] = await res.json();
+      console.log("Fetched data:", data);
 
       setSearches(data);
       setLoading(false);
@@ -52,18 +63,23 @@ export default function DashboardPage() {
       console.error("Fetch error:", err);
       setLoading(false);
     }
-  }, [router]);
+  }
 
+  // 🔥 FIXED useEffect
   useEffect(() => {
     const token = localStorage.getItem("api_token");
+
+    console.log("TOKEN:", token);
+
     if (!token) {
       router.replace("/login");
       return;
     }
 
     tokenRef.current = token;
+
     fetchSearches();
-  }, [fetchSearches, router]);
+  }, []);
 
   // ✅ FILTER
   const filteredSearches = searches.filter(
@@ -160,7 +176,6 @@ export default function DashboardPage() {
               <tbody>
                 {filteredSearches.map((s) => (
                   <tr key={s.id} className="border-t">
-
                     <td className="px-5 py-3">{s.query}</td>
 
                     <td className="px-5 py-3">
@@ -168,10 +183,13 @@ export default function DashboardPage() {
                         className="px-2 py-1 rounded text-xs"
                         style={{
                           background:
-                            s.source === "Google" ? "#e3f2fd" :
-                            s.source === "YouTube" ? "#ffebee" :
-                            s.source === "Amazon" ? "#fff3e0" :
-                            "#eee"
+                            s.source === "Google"
+                              ? "#e3f2fd"
+                              : s.source === "YouTube"
+                              ? "#ffebee"
+                              : s.source === "Amazon"
+                              ? "#fff3e0"
+                              : "#eee",
                         }}
                       >
                         {s.source}
@@ -182,10 +200,7 @@ export default function DashboardPage() {
                       {formatDate(s.timestamp)}
                     </td>
 
-                    <td className="px-5 py-3">
-                      {s.device}
-                    </td>
-
+                    <td className="px-5 py-3">{s.device}</td>
                   </tr>
                 ))}
               </tbody>
