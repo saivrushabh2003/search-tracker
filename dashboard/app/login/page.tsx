@@ -8,17 +8,19 @@ export default function LoginPage() {
   const handleLogin = () => {
     if (!token.trim()) return;
 
-    // store token
-    localStorage.setItem("api_token", token);
+    // ✅ store token
+    localStorage.setItem("api_token", token.trim());
 
-    // 🔥 force redirect (reliable in production)
+    console.log("Saved token:", token);
+
+    // ✅ force redirect
     window.location.href = "/dashboard";
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-100">
       <div className="bg-white p-6 rounded-xl shadow w-80">
-        <h2 className="text-lg font-semibold mb-4">Search Tracker</h2>
+        <h2 className="text-lg font-semibold mb-4">Search Tracker Login</h2>
 
         <input
           type="text"

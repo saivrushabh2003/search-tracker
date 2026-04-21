@@ -15,13 +15,13 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // 🔥 wrap everything inside async function (important)
     const load = async () => {
       const token = localStorage.getItem("api_token");
 
-      console.log("TOKEN:", token);
+      console.log("TOKEN FROM STORAGE:", token);
 
       if (!token) {
+        console.log("No token → redirecting to login");
         window.location.href = "/login";
         return;
       }
@@ -32,17 +32,23 @@ export default function DashboardPage() {
         const res = await fetch(
           "https://search-tracker-nxb4.onrender.com/api/searches",
           {
+            method: "GET",
             headers: {
-              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+              "Authorization": `Bearer ${token}`, // ✅ critical
             },
           }
         );
 
         console.log("STATUS:", res.status);
 
+        if (!res.ok) {
+          throw new Error("Request failed");
+        }
+
         const data = await res.json();
 
-        console.log("DATA:", data);
+        console.log("DATA RECEIVED:", data);
 
         setSearches(data);
       } catch (err) {
