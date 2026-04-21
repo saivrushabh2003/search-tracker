@@ -1,83 +1,191 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 
-export default function LoginPage() {
-  console.log("https://search-tracker-nxb4.onrender.com:", process.env.NEXT_PUBLIC_API_URL);
-  const [token, setToken] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+interface Search {
+  id: string;
+  query: string;
+  timestamp: string;
+  device: string;
+  source: string;
+  createdAt: string;
+}
+
+function formatDate(iso: string) {
+  return new Intl.DateTimeFormat("en-IN", {
+    dateStyle: "medium",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
+
+export default function DashboardPage() {
   const router = useRouter();
 
-  async function handleLogin(e: React.FormEvent) {
-    e.preventDefault();
-    setError("");
-    if (!token.trim()) {
-      setError("Please enter your API token.");
+  const [searches, setSearches] = useState<Search[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [sourceFilter, setSourceFilter] = useState("");
+
+  const tokenRef = useRef<string>("");
+
+  const fetchSearches = useCallback(async () => {
+    const token = tokenRef.current;
+    if (!token) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL;
+
+    const res = await fetch(`${apiUrl}/api/searches`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    const data: Search[] = await res.json();
+    setSearches(data);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => {
+    const token = localStorage.getItem("api_token");
+    if (!token) {
+      router.replace("/login");
       return;
     }
-    setLoading(true);
-    try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-      const res = await fetch(`${apiUrl}/api/searches`, {
-        headers: { Authorization: `Bearer ${token.trim()}` },
-      });
-      if (res.status === 403 || res.status === 401) {
-        setError("Invalid token. Please check and try again.");
-        setLoading(false);
-        return;
-      }
-      if (!res.ok) {
-        setError("Could not reach the server. Check your API URL.");
-        setLoading(false);
-        return;
-      }
-      localStorage.setItem("api_token", token.trim());
-      router.replace("/dashboard");
-    } catch {
-      setError("Network error. Is the backend running?");
-      setLoading(false);
-    }
-  }
+    tokenRef.current = token;
+    fetchSearches();
+  }, [fetchSearches, router]);
+
+  // ✅ FILTER
+  const filteredSearches = searches.filter(
+    (s) => !sourceFilter || s.source === sourceFilter
+  );
+
+  // ✅ TOP SEARCHES LOGIC
+  const topSearches = Object.entries(
+    filteredSearches.reduce((acc, s) => {
+      acc[s.query] = (acc[s.query] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>)
+  )
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 5);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-50 to-white px-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-lg p-8">
-        <div className="mb-8 text-center">
-          <span className="text-4xl">🔍</span>
-          <h1 className="mt-3 text-2xl font-bold text-gray-900">Search Tracker</h1>
-          <p className="mt-1 text-sm text-gray-500">Enter your API token to access your dashboard</p>
+    <div className="min-h-screen bg-gray-50">
+
+      {/* HEADER */}
+      <header className="bg-white border-b px-6 py-4 flex justify-between">
+        <h1 className="font-bold text-lg">Search Tracker</h1>
+        <button
+          onClick={() => {
+            localStorage.removeItem("api_token");
+            router.replace("/login");
+          }}
+          className="text-red-500 text-sm"
+        >
+          Logout
+        </button>
+      </header>
+
+      <main className="max-w-5xl mx-auto px-4 py-8 space-y-6">
+
+        {/* FILTER */}
+        <div className="flex items-center gap-3">
+          <label className="text-sm">Filter:</label>
+          <select
+            value={sourceFilter}
+            onChange={(e) => setSourceFilter(e.target.value)}
+            className="border px-3 py-2 rounded"
+          >
+            <option value="">All</option>
+            <option value="Google">Google</option>
+            <option value="YouTube">YouTube</option>
+            <option value="Amazon">Amazon</option>
+          </select>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
-          <div>
-            <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
-              API Token
-            </label>
-            <input
-              id="token"
-              type="password"
-              value={token}
-              onChange={(e) => setToken(e.target.value)}
-              placeholder="Paste your token here"
-              className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              autoFocus
-            />
+        {/* 🔥 TOP SEARCHES */}
+        <div className="bg-white rounded-xl border p-4">
+          <h3 className="text-sm font-semibold mb-3 text-gray-700">
+            🔥 Top Searches
+          </h3>
+
+          {topSearches.length === 0 ? (
+            <p className="text-sm text-gray-400">No data yet</p>
+          ) : (
+            <ul className="space-y-2">
+              {topSearches.map(([query, count], i) => (
+                <li
+                  key={query}
+                  className="flex justify-between text-sm text-gray-700"
+                >
+                  <span>
+                    {i + 1}. {query}
+                  </span>
+                  <span className="font-semibold">{count}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {/* TABLE */}
+        <div className="bg-white rounded-xl border overflow-hidden">
+
+          <div className="px-5 py-3 border-b">
+            <h2 className="text-sm font-semibold">
+              Recent Searches ({filteredSearches.length})
+            </h2>
           </div>
 
-          {error && (
-            <p className="text-sm text-red-600 bg-red-50 px-3 py-2 rounded-lg">{error}</p>
+          {loading ? (
+            <div className="p-5 text-gray-400">Loading...</div>
+          ) : (
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="bg-gray-50 text-xs uppercase text-gray-500">
+                  <th className="px-5 py-3 text-left">Query</th>
+                  <th className="px-5 py-3 text-left">Source</th>
+                  <th className="px-5 py-3 text-left">Date</th>
+                  <th className="px-5 py-3 text-left">Device</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {filteredSearches.map((s) => (
+                  <tr key={s.id} className="border-t">
+
+                    <td className="px-5 py-3">{s.query}</td>
+
+                    <td className="px-5 py-3">
+                      <span
+                        className="px-2 py-1 rounded text-xs"
+                        style={{
+                          background:
+                            s.source === "Google" ? "#e3f2fd" :
+                            s.source === "YouTube" ? "#ffebee" :
+                            s.source === "Amazon" ? "#fff3e0" :
+                            "#eee"
+                        }}
+                      >
+                        {s.source}
+                      </span>
+                    </td>
+
+                    <td className="px-5 py-3">
+                      {formatDate(s.timestamp)}
+                    </td>
+
+                    <td className="px-5 py-3">
+                      {s.device}
+                    </td>
+
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-indigo-400 text-white text-sm font-semibold rounded-lg transition-colors"
-          >
-            {loading ? "Verifying…" : "Sign In"}
-          </button>
-        </form>
-      </div>
+        </div>
+
+      </main>
     </div>
   );
 }
