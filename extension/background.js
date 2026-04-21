@@ -1,5 +1,5 @@
-const API_URL = "https://your-backend.onrender.com/api/search";
-const API_TOKEN = "your-api-token-here"; // Replace with your actual token
+const API_URL = "https://search-tracker-nxb4.onrender.com/api/search";;
+const API_TOKEN = "517fc9134f21cbd2a0561ff9f727b0e0a581ea540fac51c0473b67bc6680b1c1"; // Replace with your actual token
 
 function getDeviceId() {
   return new Promise((resolve) => {
