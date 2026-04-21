@@ -15,33 +15,44 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const token = localStorage.getItem("api_token");
+    // 🔥 wrap everything inside async function (important)
+    const load = async () => {
+      const token = localStorage.getItem("api_token");
 
-    console.log("TOKEN:", token);
+      console.log("TOKEN:", token);
 
-    if (!token) {
-      window.location.href = "/login";
-      return;
-    }
+      if (!token) {
+        window.location.href = "/login";
+        return;
+      }
 
-    fetch("https://search-tracker-nxb4.onrender.com/api/searches", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => {
+      try {
+        console.log("🚀 Calling API...");
+
+        const res = await fetch(
+          "https://search-tracker-nxb4.onrender.com/api/searches",
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
         console.log("STATUS:", res.status);
-        return res.json();
-      })
-      .then((data) => {
+
+        const data = await res.json();
+
         console.log("DATA:", data);
+
         setSearches(data);
+      } catch (err) {
+        console.error("FETCH ERROR:", err);
+      } finally {
         setLoading(false);
-      })
-      .catch((err) => {
-        console.error("ERROR:", err);
-        setLoading(false);
-      });
+      }
+    };
+
+    load();
   }, []);
 
   return (
@@ -70,6 +81,8 @@ export default function DashboardPage() {
 
         {loading ? (
           <p>Loading...</p>
+        ) : searches.length === 0 ? (
+          <p>No data found</p>
         ) : (
           <ul className="space-y-2">
             {searches.map((s) => (
