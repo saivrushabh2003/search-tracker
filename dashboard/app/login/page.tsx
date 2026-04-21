@@ -1,17 +1,18 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
   const [token, setToken] = useState("");
-  const router = useRouter();
 
   const handleLogin = () => {
     if (!token.trim()) return;
 
+    // store token
     localStorage.setItem("api_token", token);
-    router.push("/dashboard");
+
+    // 🔥 force redirect (reliable in production)
+    window.location.href = "/dashboard";
   };
 
   return (

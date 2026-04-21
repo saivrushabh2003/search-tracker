@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 
 interface Search {
   id: string;
@@ -12,7 +11,6 @@ interface Search {
 }
 
 export default function DashboardPage() {
-  const router = useRouter();
   const [searches, setSearches] = useState<Search[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -22,7 +20,7 @@ export default function DashboardPage() {
     console.log("TOKEN:", token);
 
     if (!token) {
-      router.replace("/login");
+      window.location.href = "/login";
       return;
     }
 
@@ -48,20 +46,23 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <header className="bg-white border-b px-6 py-4 flex justify-between">
+
+      {/* HEADER */}
+      <div className="bg-white border-b px-6 py-4 flex justify-between">
         <h1 className="font-bold">Search Tracker</h1>
 
         <button
           onClick={() => {
             localStorage.removeItem("api_token");
-            router.replace("/login");
+            window.location.href = "/login";
           }}
           className="text-red-500"
         >
           Logout
         </button>
-      </header>
+      </div>
 
+      {/* CONTENT */}
       <div className="p-6">
         <h2 className="font-semibold mb-4">
           Recent Searches ({searches.length})
